@@ -10,6 +10,7 @@ public struct SendGridClient {
     let templateURL =       "https://api.sendgrid.com/v3/templates/{template_id}"
     let marketingListsURL = "https://api.sendgrid.com/v3/marketing/lists"
     let marketingURL =      "https://api.sendgrid.com/v3/marketing/lists/{id}"
+    let marketingUsersURL =  "https://api.sendgrid.com/v3/marketing/contacts/search"
     let httpClient: HTTPClient
     let apiKey: String
     
@@ -56,9 +57,10 @@ public struct SendGridClient {
     }
     
     public func getContactLists() async throws -> [MarketingList] {
-                
+                        
         var headers = HTTPHeaders()
         headers.add(name: "Authorization", value: "Bearer \(apiKey)")
+        headers.add(name: "Content-Type", value: "application/json")
         
         let response = try await httpClient.execute(
             request: .init(
@@ -69,7 +71,6 @@ public struct SendGridClient {
         ).get()
     
         let byteBuffer = response.body ?? ByteBuffer(.init())
-//        print(String(buffer: byteBuffer))
 
         // If the request was accepted, throw error
         guard response.status == .ok || response.status == .accepted else {
@@ -106,11 +107,42 @@ public struct SendGridClient {
 //        return lists
     }
     
+    public func getAllUsers() async throws -> [MarketingContact] {
+        
+        struct Query: Codable {
+            let query: String
+        }
+        
+        var headers = HTTPHeaders()
+        headers.add(name: "Authorization", value: "Bearer \(apiKey)")
+        headers.add(name: "Content-Type", value: "application/json")
+            
+        let query = Query(query: "email LIKE '%%'")
+        
+        let response = try await httpClient.execute(
+            request: .init(
+                url: marketingUsersURL,
+                method: .POST,
+                headers: headers,
+                body: .data(encoder.encode(query))
+            )
+        ).get()
+    
+        let byteBuffer = response.body ?? ByteBuffer(.init())
+
+        // If the request was accepted, throw error
+        guard response.status == .ok || response.status == .accepted else {
+            throw try decoder.decode(SendGridError.self, from: byteBuffer)
+        }
+            
+        let wrapper = try decoder.decode(MarketingContactWrapper.self, from: byteBuffer)
+        return wrapper.result
+    }
+    
     public func getTemplates() async throws { //}-> [ContactList] {
                 
         var headers = HTTPHeaders()
         headers.add(name: "Authorization", value: "Bearer \(apiKey)")
-//        headers.add(name: "Content-Type", value: "application/json")
         
         let response = try await httpClient.execute(
             request: .init(
