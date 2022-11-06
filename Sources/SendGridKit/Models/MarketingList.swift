@@ -7,7 +7,7 @@
 
 import Foundation
 
-public final class MarketingList: Decodable {
+public final class MarketingList: Codable {
     
     public var id: String
     public var name: String
@@ -22,6 +22,6 @@ public final class MarketingList: Decodable {
 
 
 // TODO: make generic
-public final class MarketingListWrapper: Decodable {
+public final class MarketingListWrapper: Codable {
     public var result: [MarketingList]
 }
