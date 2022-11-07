@@ -6,8 +6,8 @@ import NIOHTTP1
 public struct SendGridClient {
     
     let apiURL =            "https://api.sendgrid.com/v3/mail/send"
-    let templatesURL =      "https://api.sendgrid.com/v3/templates"
-    let templateURL =       "https://api.sendgrid.com/v3/templates/{template_id}"
+    let templatesURL =      "https://api.sendgrid.com/v3/designs"
+    let templateURL =       "https://api.sendgrid.com/v3/designs/{id}"//"https://api.sendgrid.com/v3/templates/{template_id}"
     let marketingListsURL = "https://api.sendgrid.com/v3/marketing/lists"
     let marketingURL =      "https://api.sendgrid.com/v3/marketing/lists/{id}"
     let marketingUsersURL =  "https://api.sendgrid.com/v3/marketing/contacts/search"
@@ -139,7 +139,7 @@ public struct SendGridClient {
         return wrapper.result
     }
     
-    public func getTemplates() async throws { //}-> [ContactList] {
+    public func getTemplates() async throws -> [Template] {
                 
         var headers = HTTPHeaders()
         headers.add(name: "Authorization", value: "Bearer \(apiKey)")
@@ -154,18 +154,19 @@ public struct SendGridClient {
 
         // JSONDecoder will handle empty body by throwing decoding error
         let byteBuffer = response.body ?? ByteBuffer(.init())
+        
+        print(String(buffer: byteBuffer))
 
         // If the request was accepted, throw error
         guard response.status == .ok || response.status == .accepted else {
             throw try decoder.decode(SendGridError.self, from: byteBuffer)
         }
             
-        return
-//        let lists = try decoder.decode([ContactList].self, from: byteBuffer)
-//        return lists
+        let wrapper = try decoder.decode(TemplateWrapper.self, from: byteBuffer)
+        return wrapper.result
     }
     
-    public func getTemplate(id: Int) async throws { //}-> [ContactList] {
+    public func getTemplate(id: String) async throws -> Design {
                 
         var headers = HTTPHeaders()
         headers.add(name: "Authorization", value: "Bearer \(apiKey)")
@@ -173,7 +174,7 @@ public struct SendGridClient {
         
         let response = try await httpClient.execute(
             request: .init(
-                url: templateURL.replacingOccurrences(of: "{template_id}", with: "\(id)"),
+                url: templateURL.replacingOccurrences(of: "{id}", with: "\(id)"),
                 method: .GET,
                 headers: headers
             )
@@ -186,9 +187,8 @@ public struct SendGridClient {
         guard response.status == .ok || response.status == .accepted else {
             throw try decoder.decode(SendGridError.self, from: byteBuffer)
         }
-            
-        return
-//        let lists = try decoder.decode([ContactList].self, from: byteBuffer)
-//        return lists
+                    
+        let design = try decoder.decode(Design.self, from: byteBuffer)
+        return design
     }
 }
